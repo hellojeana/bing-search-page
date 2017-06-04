@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>bing search</title>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+		<link rel="stylesheet" href="css/main.css" />
+	</head>
+	<body>
+		<div class="bg-div">
+			<div class="search-box">
+			<div class="logo"></div>
+			<form id="search_form" target="_blank" action="https://www.bing.com">
+				<input type="text"name="q" class="search-input-text"id="search_input"autocomplete="off" />
+				<input type="submit" class="search-input-button" value="" />
+			</form>
+			</div>
+		</div>
+		<div class="suggest" id="search_suggest"style="display: none;">
+			<ul id="search_result">
+				<li>sousuo jieguo1</li>
+				<li>sousuojieguo 2</li>
+			</ul>
+		</div>
+		<script>
+			var getDOM = function(id){
+				return document.getElementById(id);
+			}
+			var addEvent = function(id,event,fn){
+				var el = getDOM(id)||document;
+				if(el.addEventListener){//用于非ie浏览器
+					el.addEventListener(event,fn,false);
+				}else if(el.attachEvent){//用于ie浏览器
+					el.attachEvent('on'+event,fn);
+				}
+			}
+			var getElementLeft = function(element){
+				var actualLeft = element.offsetLeft;
+				var current = element.offsetParent;
+				
+				while (current !== null){
+					actualLeft += current.offsetLeft;
+					current = current.offsetParent;
+				}
+				return actualLeft;
+			}
+			var getElementTop = function(element){
+				var actualTop = element.offsetTop;
+				var current = element.offsetParent;
+				
+				while (current !== null){
+					actualTop += current.offsetTop;
+					current = current.offsetParent;
+				}
+				return actualTop;
+			}
+			
+			var ajaxGet = function(url,callback){
+				var _xhr = null;
+				if(window.XMLHttpRequest){
+					_xhr = new window.XMLHttpRequest();//非ie浏览器
+				}else if(window.ActiveXObject){
+					_xhr = new ActiveXObject("Msxml2.XMLHTTP");//ie浏览器
+				}
+				_xhr.onreadystatechange = function(){ //返回搜索结果给用户
+					if (_xhr.readyState == 4 && _xhr.status == 200){//表示服务器正确响应并返回响应值
+						callback(JSON.parse(_xhr.responseText));//服务器返回结果存放在responseText
+					}//JSON.parse作用是把字符串转化为JS可以识别的对象
+				}
+				_xhr.open('get',url,true);//第三个参数询问是否异步
+				_xhr.send(null);
+			}
+			//事件绑定
+			var delegateEvent = function(target,event,fn){
+				addEvent(document,event,function(e){
+					if(e.target.nodeName == target.toUpperCase()){
+						fn.call(e.target);
+					}
+				});
+			}
+			
+			addEvent('search_input','keyup',function(){
+				var searchText = getDOM('search_input').value;//取得用户输入数据
+				ajaxGet('http://api.bing.com/qsonhs.aspx?q='+searchText,function(d){
+					var d = d.AS.Results[0].Suggests;
+					var html = '';
+					for(var i = 0;i < d.length;i++){
+						html += '<li>' + d[i].Txt+'<li>';
+					}
+				getDOM('search_result').innerHTML = html;
+				getDOM('search_suggest').style.top = getElementTop(getDOM('search_form'))+38+'px';
+				getDOM('search_suggest').style.left = getElementLeft(getDOM('search_form'))+'px';
+				getDOM('search_suggest').style.position = 'absolute';
+				getDOM('search_suggest').style.display = 'block';
+			});});
+			
+			delegateEvent('li','click',function(){
+				var keyword = this.innerHTML;
+				location.href = 'http://cn.bing.com/search?q='+keyword;
+			});
+		</script>
+	</body>
+</html>
